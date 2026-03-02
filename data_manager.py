@@ -34,8 +34,40 @@ def _get_github_headers():
     }
 
 
+def _github_upload_file(content: bytes, file_path: str, message: str) -> str:
+    """上传文件到 GitHub 仓库"""
+    url = f"https://api.github.com/repos/{GITHUB_REPO}/contents/{file_path}"
+    encoded_content = base64.b64encode(content).decode()
+
+    # 检查文件是否已存在
+    try:
+        resp = requests.get(url, headers=_get_github_headers(), params={"ref": GITHUB_BRANCH})
+        if resp.status_code == 200:
+            sha = resp.json().get("sha")
+        else:
+            sha = None
+    except:
+        sha = None
+
+    payload = {
+        "message": message,
+        "content": encoded_content,
+        "branch": GITHUB_BRANCH
+    }
+    if sha:
+        payload["sha"] = sha
+
+    try:
+        resp = requests.put(url, headers=_get_github_headers(), json=payload)
+        if resp.status_code in [200, 201]:
+            return f"https://raw.githubusercontent.com/{GITHUB_REPO}/{GITHUB_BRANCH}/{file_path}"
+    except:
+        pass
+    return ""
+
+
 def _get_file_sha():
-    """获取文件的 SHA（用于更新）"""
+    """获取数据文件的 SHA"""
     url = f"https://api.github.com/repos/{GITHUB_REPO}/contents/{DATA_FILE_PATH}"
     params = {"ref": GITHUB_BRANCH}
     try:
@@ -48,9 +80,8 @@ def _get_file_sha():
 
 
 def _load_data() -> dict:
-    """加载数据（从 GitHub 或本地）"""
+    """加载数据"""
     if is_deployed() and GITHUB_TOKEN:
-        # 从 GitHub 读取
         url = f"https://raw.githubusercontent.com/{GITHUB_REPO}/{GITHUB_BRANCH}/{DATA_FILE_PATH}"
         try:
             resp = requests.get(url)
@@ -60,7 +91,6 @@ def _load_data() -> dict:
             pass
         return {"projects": []}
     else:
-        # 本地读取
         local_file = BASE_DIR / DATA_FILE_PATH
         if local_file.exists():
             with open(local_file, "r", encoding="utf-8") as f:
@@ -69,9 +99,8 @@ def _load_data() -> dict:
 
 
 def _save_data(data: dict):
-    """保存数据（到 GitHub 或本地）"""
+    """保存数据"""
     if is_deployed() and GITHUB_TOKEN:
-        # 保存到 GitHub
         url = f"https://api.github.com/repos/{GITHUB_REPO}/contents/{DATA_FILE_PATH}"
         content = base64.b64encode(json.dumps(data, ensure_ascii=False, indent=2).encode()).decode()
 
@@ -90,7 +119,6 @@ def _save_data(data: dict):
         except:
             return False
     else:
-        # 本地保存
         local_file = BASE_DIR / DATA_FILE_PATH
         with open(local_file, "w", encoding="utf-8") as f:
             json.dump(data, f, ensure_ascii=False, indent=2)
@@ -166,26 +194,44 @@ def delete_project(project_id: str) -> bool:
 
 
 def save_screenshot(uploaded_file, project_id: str) -> str:
-    """保存截图（本地）"""
-    SCREENSHOTS_DIR.mkdir(parents=True, exist_ok=True)
+    """保存截图（本地或GitHub）"""
     ext = Path(uploaded_file.name).suffix or ".png"
-    filename = f"{project_id}{ext}"
-    filepath = SCREENSHOTS_DIR / filename
-    with open(filepath, "wb") as f:
-        f.write(uploaded_file.getbuffer())
-    return f"assets/screenshots/{filename}"
+    content = uploaded_file.read()
+
+    if is_deployed() and GITHUB_TOKEN:
+        # 上传到 GitHub
+        file_path = f"assets/screenshots/{project_id}{ext}"
+        url = _github_upload_file(content, file_path, f"上传截图 {project_id}")
+        return url
+    else:
+        # 本地保存
+        SCREENSHOTS_DIR.mkdir(parents=True, exist_ok=True)
+        filename = f"{project_id}{ext}"
+        filepath = SCREENSHOTS_DIR / filename
+        with open(filepath, "wb") as f:
+            f.write(content)
+        return f"assets/screenshots/{filename}"
 
 
 def save_file(uploaded_file, project_id: str) -> str:
-    """保存文件（本地）"""
-    FILES_DIR.mkdir(parents=True, exist_ok=True)
+    """保存文档文件"""
     ext = Path(uploaded_file.name).suffix
     name = Path(uploaded_file.name).stem
-    filename = f"{project_id}_{name}{ext}"
-    filepath = FILES_DIR / filename
-    with open(filepath, "wb") as f:
-        f.write(uploaded_file.getbuffer())
-    return f"assets/files/{filename}"
+    content = uploaded_file.read()
+
+    if is_deployed() and GITHUB_TOKEN:
+        # 上传到 GitHub
+        file_path = f"assets/files/{project_id}_{name}{ext}"
+        url = _github_upload_file(content, file_path, f"上传文档 {name}")
+        return url
+    else:
+        # 本地保存
+        FILES_DIR.mkdir(parents=True, exist_ok=True)
+        filename = f"{project_id}_{name}{ext}"
+        filepath = FILES_DIR / filename
+        with open(filepath, "wb") as f:
+            f.write(content)
+        return f"assets/files/{filename}"
 
 
 def read_file_content(file_path: str) -> tuple:
@@ -193,6 +239,24 @@ def read_file_content(file_path: str) -> tuple:
     if not file_path:
         return "", ""
 
+    # 判断是否为URL
+    if file_path.startswith("http"):
+        try:
+            resp = requests.get(file_path)
+            if resp.status_code == 200:
+                content = resp.text
+                ext = Path(file_path).suffix.lower()
+                text_types = {
+                    ".md": "markdown", ".txt": "text", ".json": "json",
+                    ".html": "html", ".css": "css", ".py": "python",
+                    ".js": "javascript", ".yaml": "yaml", ".yml": "yaml"
+                }
+                return content, text_types.get(ext, "text")
+        except:
+            pass
+        return "", "binary"
+
+    # 本地文件
     filepath = BASE_DIR / file_path
     if not filepath.exists():
         return "", ""
@@ -223,6 +287,6 @@ def get_file_icon(file_ext: str) -> str:
         ".js": "⚡", ".ts": "📘", ".java": "☕",
         ".go": "🐹", ".pdf": "📕", ".doc": "📘",
         ".docx": "📘", ".ppt": "📽️", ".pptx": "📽️",
-        ".zip": "📦"
+        ".zip": "📦", ".png": "🖼️", ".jpg": "🖼️", ".jpeg": "🖼️"
     }
     return icons.get(file_ext.lower(), "📁")

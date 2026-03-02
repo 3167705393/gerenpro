@@ -1,74 +1,122 @@
-"""数据管理模块 - 处理项目数据的增删改查"""
+"""数据管理模块 - 支持 GitHub API 存储"""
 
 import json
+import base64
+import os
 import uuid
 from datetime import datetime
 from pathlib import Path
 from typing import Optional
+import requests
 
-# 数据文件路径
-DATA_DIR = Path(__file__).parent.parent / "data"
-PROJECTS_FILE = DATA_DIR / "projects.json"
-SCREENSHOTS_DIR = Path(__file__).parent.parent / "assets" / "screenshots"
-DOCS_DIR = Path(__file__).parent.parent / "assets" / "docs"
+# GitHub 配置
+GITHUB_TOKEN = os.environ.get("GITHUB_TOKEN", "")
+GITHUB_REPO = os.environ.get("GITHUB_REPO", "3167705393/gerenpro")
+GITHUB_BRANCH = os.environ.get("GITHUB_BRANCH", "main")
+DATA_FILE_PATH = "projects.json"
+
+# 本地路径
+BASE_DIR = Path(__file__).parent
+SCREENSHOTS_DIR = BASE_DIR / "assets" / "screenshots"
+FILES_DIR = BASE_DIR / "assets" / "files"
 
 
-def _ensure_data_file():
-    """确保数据文件存在"""
-    if not PROJECTS_FILE.exists():
-        DATA_DIR.mkdir(parents=True, exist_ok=True)
-        _save_data({"projects": []})
+def is_deployed() -> bool:
+    """检测是否为部署模式"""
+    return os.environ.get("STREAMLIT_SERVER_HEADLESS", "").lower() == "true"
+
+
+def _get_github_headers():
+    """获取 GitHub API 请求头"""
+    return {
+        "Authorization": f"token {GITHUB_TOKEN}",
+        "Accept": "application/vnd.github.v3+json"
+    }
+
+
+def _get_file_sha():
+    """获取文件的 SHA（用于更新）"""
+    url = f"https://api.github.com/repos/{GITHUB_REPO}/contents/{DATA_FILE_PATH}"
+    params = {"ref": GITHUB_BRANCH}
+    try:
+        resp = requests.get(url, headers=_get_github_headers(), params=params)
+        if resp.status_code == 200:
+            return resp.json().get("sha")
+    except:
+        pass
+    return None
 
 
 def _load_data() -> dict:
-    """加载项目数据"""
-    _ensure_data_file()
-    with open(PROJECTS_FILE, "r", encoding="utf-8") as f:
-        return json.load(f)
+    """加载数据（从 GitHub 或本地）"""
+    if is_deployed() and GITHUB_TOKEN:
+        # 从 GitHub 读取
+        url = f"https://raw.githubusercontent.com/{GITHUB_REPO}/{GITHUB_BRANCH}/{DATA_FILE_PATH}"
+        try:
+            resp = requests.get(url)
+            if resp.status_code == 200:
+                return resp.json()
+        except:
+            pass
+        return {"projects": []}
+    else:
+        # 本地读取
+        local_file = BASE_DIR / DATA_FILE_PATH
+        if local_file.exists():
+            with open(local_file, "r", encoding="utf-8") as f:
+                return json.load(f)
+        return {"projects": []}
 
 
 def _save_data(data: dict):
-    """保存项目数据"""
-    DATA_DIR.mkdir(parents=True, exist_ok=True)
-    with open(PROJECTS_FILE, "w", encoding="utf-8") as f:
-        json.dump(data, f, ensure_ascii=False, indent=2)
+    """保存数据（到 GitHub 或本地）"""
+    if is_deployed() and GITHUB_TOKEN:
+        # 保存到 GitHub
+        url = f"https://api.github.com/repos/{GITHUB_REPO}/contents/{DATA_FILE_PATH}"
+        content = base64.b64encode(json.dumps(data, ensure_ascii=False, indent=2).encode()).decode()
+
+        sha = _get_file_sha()
+        payload = {
+            "message": f"更新项目数据 {datetime.now().strftime('%Y-%m-%d %H:%M')}",
+            "content": content,
+            "branch": GITHUB_BRANCH
+        }
+        if sha:
+            payload["sha"] = sha
+
+        try:
+            resp = requests.put(url, headers=_get_github_headers(), json=payload)
+            return resp.status_code in [200, 201]
+        except:
+            return False
+    else:
+        # 本地保存
+        local_file = BASE_DIR / DATA_FILE_PATH
+        with open(local_file, "w", encoding="utf-8") as f:
+            json.dump(data, f, ensure_ascii=False, indent=2)
+        return True
 
 
 def get_all_projects() -> list[dict]:
     """获取所有项目"""
-    data = _load_data()
-    return data.get("projects", [])
+    return _load_data().get("projects", [])
 
 
 def get_project_by_id(project_id: str) -> Optional[dict]:
-    """根据ID获取项目"""
-    projects = get_all_projects()
-    for project in projects:
-        if project["id"] == project_id:
+    """根据 ID 获取项目"""
+    for project in get_all_projects():
+        if project.get("id") == project_id:
             return project
     return None
 
 
-FILES_DIR = Path(__file__).parent.parent / "assets" / "files"
-
-
-def add_project(
-    name: str,
-    description: str = "",
-    summary: str = "",
-    tech_stack: list[str] = None,
-    screenshot_path: str = "",
-    screenshot_url: str = "",
-    github_url: str = "",
-    demo_url: str = "",
-    doc_path: str = "",
-    files: list[str] = None,
-) -> dict:
-    """添加新项目"""
+def add_project(name: str, description: str = "", summary: str = "",
+                tech_stack: list = None, screenshot_path: str = "",
+                screenshot_url: str = "", github_url: str = "",
+                demo_url: str = "", doc_path: str = "") -> dict:
+    """添加项目"""
     if tech_stack is None:
         tech_stack = []
-    if files is None:
-        files = []
 
     project = {
         "id": str(uuid.uuid4()),
@@ -81,195 +129,100 @@ def add_project(
         "github_url": github_url,
         "demo_url": demo_url,
         "doc_path": doc_path,
-        "files": files,
         "created_at": datetime.now().strftime("%Y-%m-%d"),
-        "updated_at": datetime.now().strftime("%Y-%m-%d"),
+        "updated_at": datetime.now().strftime("%Y-%m-%d")
     }
 
     data = _load_data()
     data["projects"].append(project)
     _save_data(data)
-
     return project
 
 
-def update_project(
-    project_id: str,
-    name: str = None,
-    description: str = None,
-    summary: str = None,
-    tech_stack: list[str] = None,
-    screenshot_path: str = None,
-    screenshot_url: str = None,
-    github_url: str = None,
-    demo_url: str = None,
-    doc_path: str = None,
-    files: list[str] = None,
-) -> Optional[dict]:
+def update_project(project_id: str, **kwargs) -> Optional[dict]:
     """更新项目"""
     data = _load_data()
-    projects = data["projects"]
-
-    for i, project in enumerate(projects):
-        if project["id"] == project_id:
-            if name is not None:
-                project["name"] = name
-            if description is not None:
-                project["description"] = description
-            if summary is not None:
-                project["summary"] = summary
-            if tech_stack is not None:
-                project["tech_stack"] = tech_stack
-            if screenshot_path is not None:
-                project["screenshot_path"] = screenshot_path
-            if screenshot_url is not None:
-                project["screenshot_url"] = screenshot_url
-            if github_url is not None:
-                project["github_url"] = github_url
-            if demo_url is not None:
-                project["demo_url"] = demo_url
-            if doc_path is not None:
-                project["doc_path"] = doc_path
-            if files is not None:
-                project["files"] = files
+    for i, project in enumerate(data["projects"]):
+        if project.get("id") == project_id:
+            for key, value in kwargs.items():
+                if value is not None:
+                    project[key] = value
             project["updated_at"] = datetime.now().strftime("%Y-%m-%d")
-
             data["projects"][i] = project
             _save_data(data)
             return project
-
     return None
 
 
 def delete_project(project_id: str) -> bool:
     """删除项目"""
     data = _load_data()
-    projects = data["projects"]
-
-    for i, project in enumerate(projects):
-        if project["id"] == project_id:
-            # 删除关联的截图文件
-            if project.get("screenshot_path"):
-                screenshot_file = SCREENSHOTS_DIR / Path(project["screenshot_path"]).name
-                if screenshot_file.exists():
-                    screenshot_file.unlink()
-
+    for i, project in enumerate(data["projects"]):
+        if project.get("id") == project_id:
             data["projects"].pop(i)
             _save_data(data)
             return True
-
     return False
 
 
 def save_screenshot(uploaded_file, project_id: str) -> str:
-    """保存上传的截图"""
+    """保存截图（本地）"""
     SCREENSHOTS_DIR.mkdir(parents=True, exist_ok=True)
-
-    # 生成文件名
-    file_ext = Path(uploaded_file.name).suffix or ".png"
-    filename = f"{project_id}{file_ext}"
+    ext = Path(uploaded_file.name).suffix or ".png"
+    filename = f"{project_id}{ext}"
     filepath = SCREENSHOTS_DIR / filename
-
-    # 保存文件
     with open(filepath, "wb") as f:
         f.write(uploaded_file.getbuffer())
-
     return f"assets/screenshots/{filename}"
 
 
-def is_deployed() -> bool:
-    """检测是否为部署模式"""
-    import os
-    # Streamlit Cloud 会设置这些环境变量
-    return os.environ.get("STREAMLIT_SERVER_HEADLESS", "").lower() == "true"
-
-
-def save_document(uploaded_file, project_id: str) -> str:
-    """保存上传的文档"""
-    DOCS_DIR.mkdir(parents=True, exist_ok=True)
-
-    # 生成文件名
-    file_ext = Path(uploaded_file.name).suffix
-    filename = f"{project_id}{file_ext}"
-    filepath = DOCS_DIR / filename
-
-    # 保存文件
-    with open(filepath, "wb") as f:
-        f.write(uploaded_file.getbuffer())
-
-    return f"assets/docs/{filename}"
-
-
 def save_file(uploaded_file, project_id: str) -> str:
-    """保存上传的任意文件"""
+    """保存文件（本地）"""
     FILES_DIR.mkdir(parents=True, exist_ok=True)
-
-    # 生成文件名
-    file_ext = Path(uploaded_file.name).suffix
-    original_name = Path(uploaded_file.name).stem
-    filename = f"{project_id}_{original_name}{file_ext}"
+    ext = Path(uploaded_file.name).suffix
+    name = Path(uploaded_file.name).stem
+    filename = f"{project_id}_{name}{ext}"
     filepath = FILES_DIR / filename
-
-    # 保存文件
     with open(filepath, "wb") as f:
         f.write(uploaded_file.getbuffer())
-
     return f"assets/files/{filename}"
 
 
-def read_file_content(file_path: str) -> tuple[str, str]:
-    """读取文件内容，返回 (内容, 文件类型)"""
+def read_file_content(file_path: str) -> tuple:
+    """读取文件内容"""
     if not file_path:
         return "", ""
 
-    base_dir = Path(__file__).parent.parent
-    filepath = base_dir / file_path
-
+    filepath = BASE_DIR / file_path
     if not filepath.exists():
         return "", ""
 
-    file_ext = Path(file_path).suffix.lower()
-    file_type = "unknown"
-
-    # 判断文件类型
-    text_extensions = {
+    ext = Path(file_path).suffix.lower()
+    text_types = {
         ".md": "markdown", ".txt": "text", ".json": "json",
         ".html": "html", ".htm": "html", ".css": "css",
         ".py": "python", ".js": "javascript", ".ts": "typescript",
-        ".java": "java", ".go": "go", ".rs": "rust",
-        ".cpp": "cpp", ".c": "c", ".h": "header",
-        ".xml": "xml", ".yaml": "yaml", ".yml": "yaml",
-        ".sql": "sql", ".sh": "shell", ".bat": "batch",
+        ".java": "java", ".go": "go", ".yaml": "yaml", ".yml": "yaml",
+        ".sql": "sql", ".xml": "xml", ".sh": "shell"
     }
 
-    file_type = text_extensions.get(file_ext, "binary")
-
-    # 尝试读取文本文件
-    if file_type != "binary":
+    if ext in text_types:
         try:
             with open(filepath, "r", encoding="utf-8") as f:
-                return f.read(), file_type
-        except UnicodeDecodeError:
-            try:
-                with open(filepath, "r", encoding="gbk") as f:
-                    return f.read(), file_type
-            except:
-                pass
-
-    # 二进制文件返回提示
-    return f"[二进制文件: {Path(file_path).name}]", "binary"
+                return f.read(), text_types[ext]
+        except:
+            pass
+    return f"[文件: {Path(file_path).name}]", "binary"
 
 
 def get_file_icon(file_ext: str) -> str:
-    """根据文件扩展名返回图标"""
+    """获取文件图标"""
     icons = {
         ".md": "📝", ".txt": "📄", ".json": "📋",
-        ".html": "🌐", ".htm": "🌐", ".css": "🎨",
-        ".py": "🐍", ".js": "⚡", ".ts": "📘",
-        ".java": "☕", ".go": "🐹", ".rs": "🦀",
-        ".doc": "📘", ".docx": "📘",
-        ".xls": "📊", ".xlsx": "📊",
-        ".ppt": "📽️", ".pptx": "📽️",
-        ".pdf": "📕", ".zip": "📦", ".rar": "📦",
+        ".html": "🌐", ".css": "🎨", ".py": "🐍",
+        ".js": "⚡", ".ts": "📘", ".java": "☕",
+        ".go": "🐹", ".pdf": "📕", ".doc": "📘",
+        ".docx": "📘", ".ppt": "📽️", ".pptx": "📽️",
+        ".zip": "📦"
     }
     return icons.get(file_ext.lower(), "📁")

@@ -1,0 +1,73 @@
+{
+  "projects": [
+    {
+      "id": "5a700feb-623b-4e4b-8026-2dd3cce07e36",
+      "name": "陈小咪",
+      "description": "这是一个",
+      "tech_stack": [
+        "Python",
+        "aividecoding"
+      ],
+      "screenshot_path": "",
+      "screenshot_url": "",
+      "github_url": "https://github.com/3167705393/demo",
+      "demo_url": "https://github.com/3167705393/demo",
+      "created_at": "2026-03-02",
+      "updated_at": "2026-03-02"
+    },
+    {
+      "id": "a30d67ab-59d3-4e89-a515-5836ce40d9e3",
+      "name": "11",
+      "description": "11",
+      "tech_stack": [
+        "Python",
+        "11"
+      ],
+      "screenshot_path": "",
+      "screenshot_url": "",
+      "github_url": "1",
+      "demo_url": "1",
+      "doc_path": "",
+      "created_at": "2026-03-02",
+      "updated_at": "2026-03-02"
+    },
+    {
+      "id": "5ceca3cc-5104-4e18-9ef2-240e4a00025a",
+      "name": "1",
+      "description": "1",
+      "tech_stack": [
+        "JavaScript"
+      ],
+      "screenshot_path": "",
+      "screenshot_url": "",
+      "github_url": "1",
+      "demo_url": "1",
+      "doc_path": "",
+      "created_at": "2026-03-02",
+      "updated_at": "2026-03-02"
+    },
+    {
+      "id": "ai-agent-eval-platform-001",
+      "name": "AI Agent 自动化评估与 LLMOps 管理平台",
+      "summary": "企业级 AI Agent CI/CD 流水线，基于 LLM-as-a-Judge 机制实现自动化评测",
+      "description": "打造专属于 AI Agent 的 CI/CD 流水线，通过 LLM-as-a-Judge（大模型裁判）机制，将 Agent 的能力评测从人工盲测转化为可视化、可追溯的量化科学。系统采用前后端分离 + 异步任务调度的微服务架构，支持任务的暂停/恢复/取消，实现流量削峰填谷。",
+      "tech_stack": [
+        "Python",
+        "FastAPI",
+        "Vue 3",
+        "Celery",
+        "Redis",
+        "PostgreSQL",
+        "Docker",
+        "LLM"
+      ],
+      "screenshot_path": "",
+      "screenshot_url": "",
+      "github_url": "",
+      "demo_url": "",
+      "doc_path": "assets/files/ai-agent-eval-platform.md",
+      "created_at": "2026-03-02",
+      "updated_at": "2026-03-02"
+    }
+  ]
+}

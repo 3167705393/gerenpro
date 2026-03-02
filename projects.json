@@ -1,27 +1,65 @@
 {
   "projects": [
     {
-      "id": "5a700feb-623b-4e4b-8026-2dd3cce07e36",
-      "name": "陈小咪",
-      "description": "这是一个",
-      "tech_stack": ["Python", "aividecoding"],
+      "id": "project-tuoke-001",
+      "name": "企业级智能拓客平台与亿级底层数据架构开发",
+      "summary": "B2B智能获客助手，自研MCP工具实现大模型对亿级企业数据的低成本原生查询",
+      "description": "构建智能化企业获客助手，通过自然语言交互实现精准客户线索挖掘。独立承担超1亿条（100GB+）多源异构工商数据的全链路清洗与入库，封装为自定义MCP工具，相比第三方API年度节约成本90%以上。",
+      "tech_stack": [
+        "Python",
+        "Polars",
+        "Pandas",
+        "Dify",
+        "SQL Server",
+        "MCP",
+        "qwen2.5-72b-instruct"
+      ],
       "screenshot_path": "",
       "screenshot_url": "",
-      "github_url": "https://github.com/3167705393/demo",
-      "demo_url": "https://github.com/3167705393/demo",
+      "github_url": "",
+      "demo_url": "",
+      "doc_path": "assets/files/项目一-企业级智能拓客平台.md",
       "created_at": "2026-03-02",
       "updated_at": "2026-03-02"
     },
     {
-      "id": "ai-agent-eval-001",
-      "name": "AI Agent 自动化评估与 LLMOps 管理平台",
-      "summary": "企业级 AI Agent CI/CD 流水线，基于 LLM-as-a-Judge 实现自动化评测",
-      "description": "打造专属于 AI Agent 的 CI/CD 流水线，通过 LLM-as-a-Judge（大模型裁判）机制，将 Agent 的能力评测从人工盲测转化为可视化、可追溯的量化科学。系统采用前后端分离 + 异步任务调度的微服务架构，支持任务的暂停/恢复/取消。",
-      "tech_stack": ["Python", "FastAPI", "Vue 3", "Celery", "Redis", "PostgreSQL", "Docker", "LLM"],
+      "id": "project-rag-002",
+      "name": "色母粒行业垂直智能客服与高级RAG系统",
+      "summary": "企业级智能客服，双层安全防护+零推断协议RAG架构，实现防幻觉精准问答",
+      "description": "构建安全、精准、防幻觉的垂直领域智能客服系统。从0到1部署基于大模型的系统级防火墙，成功抵御Prompt注入、角色扮演越狱等恶意攻击。首创'型号独占'检索策略与'零推断协议'，幻觉率降低至5%以下。",
+      "tech_stack": [
+        "Dify",
+        "Intent Routing",
+        "RAG",
+        "Qwen3",
+        "LLM安全攻防"
+      ],
+      "screenshot_path": "",
       "screenshot_url": "",
       "github_url": "",
       "demo_url": "",
-      "doc_path": "assets/files/ai-agent-eval-platform.md",
+      "doc_path": "assets/files/项目二-色母粒行业垂直智能客服与高级RAG系统.md",
+      "created_at": "2026-03-02",
+      "updated_at": "2026-03-02"
+    },
+    {
+      "id": "project-research-003",
+      "name": "企业深度自动调研Agent",
+      "summary": "Multi-Agent深度研究系统，双轮搜索反思闭环，输出万字级商业研报",
+      "description": "对标Perplexity Deep Research的自动化调研系统。设计Planner-Reporter-Auditor多Agent协作架构，构建'双轮搜索反思闭环'，支持动态策略切换（全景调查vs专项深挖），从数天人工调研缩短至分钟级自动完成。",
+      "tech_stack": [
+        "Multi-Agent",
+        "Tavily",
+        "ReAct",
+        "Reflection",
+        "Python",
+        "Qwen3-235B"
+      ],
+      "screenshot_path": "",
+      "screenshot_url": "",
+      "github_url": "",
+      "demo_url": "",
+      "doc_path": "assets/files/项目三-企业深度自动调研Agent.md",
       "created_at": "2026-03-02",
       "updated_at": "2026-03-02"
     }

@@ -62,6 +62,28 @@
       "doc_path": "assets/files/项目三-企业深度自动调研Agent.md",
       "created_at": "2026-03-02",
       "updated_at": "2026-03-02"
+    },
+    {
+      "id": "project-llmops-004",
+      "name": "企业级AI Agent自动化评估与LLMOps管理平台",
+      "summary": "AI Agent的CI/CD流水线，LLM-as-a-Judge机制实现自动化评测",
+      "description": "打造专属于AI Agent的持续集成与交付流水线。通过FastAPI+Celery异步调度底座，结合LLM-as-a-Judge机制，将Agent能力评测从人工盲测转化为可视化、可追溯的量化科学，支持任务的暂停/恢复/取消操作。",
+      "tech_stack": [
+        "FastAPI",
+        "Vue3",
+        "Celery",
+        "Redis",
+        "PostgreSQL",
+        "MinIO",
+        "LLM-as-a-Judge"
+      ],
+      "screenshot_path": "",
+      "screenshot_url": "",
+      "github_url": "",
+      "demo_url": "",
+      "doc_path": "assets/files/ai-agent-eval-platform.md",
+      "created_at": "2026-03-02",
+      "updated_at": "2026-03-02"
     }
   ]
 }

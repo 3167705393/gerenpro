@@ -1,0 +1,50 @@
+{
+  "projects": [
+    {
+      "id": "5a700feb-623b-4e4b-8026-2dd3cce07e36",
+      "name": "陈小咪",
+      "description": "这是一个",
+      "tech_stack": [
+        "Python",
+        "aividecoding"
+      ],
+      "screenshot_path": "",
+      "screenshot_url": "",
+      "github_url": "https://github.com/3167705393/demo",
+      "demo_url": "https://github.com/3167705393/demo",
+      "created_at": "2026-03-02",
+      "updated_at": "2026-03-02"
+    },
+    {
+      "id": "a30d67ab-59d3-4e89-a515-5836ce40d9e3",
+      "name": "11",
+      "description": "11",
+      "tech_stack": [
+        "Python",
+        "11"
+      ],
+      "screenshot_path": "",
+      "screenshot_url": "",
+      "github_url": "1",
+      "demo_url": "1",
+      "doc_path": "",
+      "created_at": "2026-03-02",
+      "updated_at": "2026-03-02"
+    },
+    {
+      "id": "5ceca3cc-5104-4e18-9ef2-240e4a00025a",
+      "name": "1",
+      "description": "1",
+      "tech_stack": [
+        "JavaScript"
+      ],
+      "screenshot_path": "",
+      "screenshot_url": "",
+      "github_url": "1",
+      "demo_url": "1",
+      "doc_path": "",
+      "created_at": "2026-03-02",
+      "updated_at": "2026-03-02"
+    }
+  ]
+}

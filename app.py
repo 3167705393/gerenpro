@@ -1,7 +1,12 @@
 """项目展示网站首页"""
 
-import streamlit as st
+import sys
 from pathlib import Path
+
+# 确保能找到 services 模块
+sys.path.insert(0, str(Path(__file__).parent))
+
+import streamlit as st
 from services.data_manager import (
     get_all_projects,
     read_file_content,

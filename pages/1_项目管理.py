@@ -9,44 +9,49 @@ from data_manager import (
 
 st.set_page_config(page_title="项目管理", page_icon="⚙️", layout="wide")
 
-# 技术栈选项
-TECH_OPTIONS = [
-    "Python", "JavaScript", "TypeScript", "Java", "Go", "Rust",
-    "React", "Vue", "Angular", "Next.js", "Streamlit",
-    "Node.js", "Django", "Flask", "FastAPI",
-    "MySQL", "PostgreSQL", "MongoDB", "Redis",
-    "Docker", "Kubernetes", "AWS", "Azure",
-    "TensorFlow", "PyTorch", "OpenAI"
-]
-
 
 def render_form(project=None):
     is_edit = project is not None
 
     with st.form("project_form"):
         name = st.text_input("项目名称 *", value=project.get("name", "") if is_edit else "")
-        summary = st.text_input("项目简介", value=project.get("summary", "") if is_edit else "")
-        description = st.text_area("项目描述", value=project.get("description", "") if is_edit else "", height=80)
+        summary = st.text_input("项目简介", value=project.get("summary", "") if is_edit else "", placeholder="一句话介绍项目")
+        description = st.text_area("项目描述", value=project.get("description", "") if is_edit else "", height=100, placeholder="详细描述项目功能、特点等")
 
-        tech = st.multiselect("技术栈", TECH_OPTIONS, default=project.get("tech_stack", []) if is_edit else [])
-        custom = st.text_input("自定义技术（逗号分隔）", value="")
+        # 技术栈改为输入框
+        tech_input = st.text_input(
+            "技术栈",
+            value=", ".join(project.get("tech_stack", [])) if is_edit else "",
+            placeholder="例如: Python, React, MySQL（用逗号分隔）"
+        )
 
         st.markdown("---")
-        screenshot_url = st.text_input("截图URL", value=project.get("screenshot_url", "") if is_edit else "")
-        github_url = st.text_input("GitHub链接", value=project.get("github_url", "") if is_edit else "")
-        demo_url = st.text_input("演示地址", value=project.get("demo_url", "") if is_edit else "")
+        st.markdown("**项目链接**")
+        col1, col2 = st.columns(2)
+        with col1:
+            github_url = st.text_input("GitHub链接", value=project.get("github_url", "") if is_edit else "", placeholder="https://github.com/xxx/xxx")
+        with col2:
+            demo_url = st.text_input("演示地址", value=project.get("demo_url", "") if is_edit else "", placeholder="https://xxx.com")
 
         st.markdown("---")
-        doc = st.file_uploader("上传文档", type=["md", "txt", "py", "js", "html", "json", "yaml"])
+        st.markdown("**项目截图**")
+        screenshot_url = st.text_input("截图URL", value=project.get("screenshot_url", "") if is_edit else "", placeholder="图片链接")
+
+        st.markdown("---")
+        st.markdown("**项目文档**")
+        doc = st.file_uploader("上传文档（支持 md/txt/py/js/html/json 等）", type=["md", "txt", "py", "js", "html", "htm", "css", "json", "yaml", "yml", "xml", "sql"])
 
         submitted = st.form_submit_button("✅ 保存" if is_edit else "✅ 添加", type="primary", use_container_width=True)
+
+        # 解析技术栈
+        tech_stack = [t.strip() for t in tech_input.split(",") if t.strip()]
 
         return {
             "submitted": submitted,
             "name": name,
             "summary": summary,
             "description": description,
-            "tech_stack": tech + [t.strip() for t in custom.split(",") if t.strip()],
+            "tech_stack": tech_stack,
             "screenshot_url": screenshot_url,
             "github_url": github_url,
             "demo_url": demo_url,
@@ -99,20 +104,23 @@ def handle_submit(data):
 def render_list():
     projects = get_all_projects()
     if not projects:
-        st.info("暂无项目")
+        st.info("暂无项目，使用上方表单添加")
         return
 
+    st.subheader("📋 项目列表")
     for p in projects:
         with st.expander(f"**{p['name']}**"):
             c1, c2 = st.columns([3, 1])
             with c1:
-                if p.get("summary"): st.write(f"简介: {p['summary']}")
-                if p.get("tech_stack"): st.write(f"技术: {' | '.join(p['tech_stack'])}")
+                if p.get("summary"): st.write(f"**简介:** {p['summary']}")
+                if p.get("tech_stack"): st.write(f"**技术栈:** {' | '.join(p['tech_stack'])}")
+                if p.get("github_url"): st.write(f"**GitHub:** {p['github_url']}")
+                st.caption(f"更新于: {p.get('updated_at', 'N/A')}")
             with c2:
-                if st.button("✏️ 编辑", key=f"ed_{p['id']}"):
+                if st.button("✏️ 编辑", key=f"ed_{p['id']}", use_container_width=True):
                     st.session_state.editing = p
                     st.rerun()
-                if st.button("🗑️ 删除", key=f"del_{p['id']}"):
+                if st.button("🗑️ 删除", key=f"del_{p['id']}", use_container_width=True):
                     st.session_state.confirm_del = p['id']
 
 
@@ -131,13 +139,13 @@ def main():
             st.warning(f"确定删除「{p['name']}」？")
             c1, c2 = st.columns(2)
             with c1:
-                if st.button("确认删除", type="primary"):
+                if st.button("确认删除", type="primary", use_container_width=True):
                     delete_project(st.session_state.confirm_del)
                     st.session_state.confirm_del = None
                     st.success("已删除！")
                     st.rerun()
             with c2:
-                if st.button("取消"):
+                if st.button("取消", use_container_width=True):
                     st.session_state.confirm_del = None
                     st.rerun()
             return
@@ -145,7 +153,7 @@ def main():
     # 编辑模式
     if st.session_state.editing:
         st.info(f"编辑: **{st.session_state.editing['name']}**")
-        if st.button("← 返回添加"):
+        if st.button("← 返回添加模式"):
             st.session_state.editing = None
             st.rerun()
 

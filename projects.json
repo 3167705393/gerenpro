@@ -84,6 +84,28 @@
       "doc_path": "assets/files/ai-agent-eval-platform.md",
       "created_at": "2026-03-02",
       "updated_at": "2026-03-02"
+    },
+    {
+      "id": "project-data-005",
+      "name": "全国企业工商信息数据处理",
+      "summary": "大规模企业数据ETL管道，多进程并行处理实现亿级数据清洗入库",
+      "description": "处理全国企业工商注册信息数据，通过多阶段ETL管道将海量Excel数据清洗、标准化并导入SQL Server数据库。采用多进程并行处理与流式写入技术，解决原始数据格式不统一、数据质量参差不齐的问题，实现大规模企业数据的自动化处理与入库。",
+      "tech_stack": [
+        "Python",
+        "Polars",
+        "Pandas",
+        "SQL Server",
+        "SQLAlchemy",
+        "xlsx2csv",
+        "多进程并行"
+      ],
+      "screenshot_path": "",
+      "screenshot_url": "",
+      "github_url": "",
+      "demo_url": "",
+      "doc_path": "assets/files/项目五-全国企业工商信息数据处理.md",
+      "created_at": "2026-03-07",
+      "updated_at": "2026-03-07"
     }
   ]
 }

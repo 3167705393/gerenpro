@@ -19,6 +19,7 @@ DATA_FILE_PATH = "projects.json"
 BASE_DIR = Path(__file__).parent
 SCREENSHOTS_DIR = BASE_DIR / "assets" / "screenshots"
 FILES_DIR = BASE_DIR / "assets" / "files"
+VIDEOS_DIR = BASE_DIR / "assets" / "videos"
 
 
 def is_deployed() -> bool:
@@ -141,7 +142,8 @@ def get_project_by_id(project_id: str) -> Optional[dict]:
 def add_project(name: str, description: str = "", summary: str = "",
                 tech_stack: list = None, screenshot_path: str = "",
                 screenshot_url: str = "", github_url: str = "",
-                demo_url: str = "", doc_path: str = "") -> dict:
+                demo_url: str = "", doc_path: str = "",
+                video_url: str = "", video_path: str = "") -> dict:
     """添加项目"""
     if tech_stack is None:
         tech_stack = []
@@ -156,6 +158,8 @@ def add_project(name: str, description: str = "", summary: str = "",
         "screenshot_url": screenshot_url,
         "github_url": github_url,
         "demo_url": demo_url,
+        "video_url": video_url,
+        "video_path": video_path,
         "doc_path": doc_path,
         "created_at": datetime.now().strftime("%Y-%m-%d"),
         "updated_at": datetime.now().strftime("%Y-%m-%d")
@@ -287,6 +291,27 @@ def get_file_icon(file_ext: str) -> str:
         ".js": "⚡", ".ts": "📘", ".java": "☕",
         ".go": "🐹", ".pdf": "📕", ".doc": "📘",
         ".docx": "📘", ".ppt": "📽️", ".pptx": "📽️",
-        ".zip": "📦", ".png": "🖼️", ".jpg": "🖼️", ".jpeg": "🖼️"
+        ".zip": "📦", ".png": "🖼️", ".jpg": "🖼️", ".jpeg": "🖼️",
+        ".mp4": "🎬", ".webm": "🎬", ".mov": "🎬", ".avi": "🎬"
     }
     return icons.get(file_ext.lower(), "📁")
+
+
+def save_video(uploaded_file, project_id: str) -> str:
+    """保存视频文件（本地或GitHub）"""
+    ext = Path(uploaded_file.name).suffix or ".mp4"
+    content = uploaded_file.read()
+
+    if is_deployed() and GITHUB_TOKEN:
+        # 上传到 GitHub（注意：GitHub有文件大小限制）
+        file_path = f"assets/videos/{project_id}{ext}"
+        url = _github_upload_file(content, file_path, f"上传视频 {project_id}")
+        return url
+    else:
+        # 本地保存
+        VIDEOS_DIR.mkdir(parents=True, exist_ok=True)
+        filename = f"{project_id}{ext}"
+        filepath = VIDEOS_DIR / filename
+        with open(filepath, "wb") as f:
+            f.write(content)
+        return f"assets/videos/{filename}"

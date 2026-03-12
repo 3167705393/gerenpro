@@ -4,7 +4,7 @@ import streamlit as st
 from pathlib import Path
 from data_manager import (
     get_all_projects, add_project, update_project,
-    delete_project, save_file, is_deployed
+    delete_project, save_file, save_video, is_deployed
 )
 
 st.set_page_config(page_title="项目管理", page_icon="⚙️", layout="wide")
@@ -38,6 +38,20 @@ def render_form(project=None):
         screenshot_url = st.text_input("截图URL", value=project.get("screenshot_url", "") if is_edit else "", placeholder="图片链接")
 
         st.markdown("---")
+        st.markdown("**操作演示视频**")
+        video_url = st.text_input(
+            "视频链接（推荐）",
+            value=project.get("video_url", "") if is_edit else "",
+            placeholder="支持 B站/YouTube/腾讯视频 等嵌入链接或直链"
+        )
+        st.caption("💡 提示：推荐使用外部视频链接（如B站、对象存储），支持 mp4/webm/mov 格式直链")
+        video = st.file_uploader(
+            "或上传本地视频（最大 500MB）",
+            type=["mp4", "webm", "mov", "avi"],
+            help="支持上传大视频文件，建议使用 mp4 格式"
+        )
+
+        st.markdown("---")
         st.markdown("**项目文档**")
         doc = st.file_uploader("上传文档（支持 md/txt/py/js/html/json 等）", type=["md", "txt", "py", "js", "html", "htm", "css", "json", "yaml", "yml", "xml", "sql"])
 
@@ -55,10 +69,13 @@ def render_form(project=None):
             "screenshot_url": screenshot_url,
             "github_url": github_url,
             "demo_url": demo_url,
+            "video_url": video_url,
+            "video": video,
             "doc": doc,
             "is_edit": is_edit,
             "project_id": project.get("id") if is_edit else None,
-            "old_doc": project.get("doc_path") if is_edit else ""
+            "old_doc": project.get("doc_path") if is_edit else "",
+            "old_video": project.get("video_path") if is_edit else ""
         }
 
 
@@ -73,6 +90,13 @@ def handle_submit(data):
         pid = data["project_id"] or str(uuid.uuid4())
         doc_path = save_file(data["doc"], pid)
 
+    # 处理视频
+    video_path = data["old_video"]
+    if data["video"]:
+        import uuid
+        pid = data["project_id"] or str(uuid.uuid4())
+        video_path = save_video(data["video"], pid)
+
     if data["is_edit"]:
         update_project(
             data["project_id"],
@@ -83,6 +107,8 @@ def handle_submit(data):
             screenshot_url=data["screenshot_url"],
             github_url=data["github_url"],
             demo_url=data["demo_url"],
+            video_url=data["video_url"],
+            video_path=video_path,
             doc_path=doc_path
         )
         st.success("已更新！")
@@ -95,6 +121,8 @@ def handle_submit(data):
             screenshot_url=data["screenshot_url"],
             github_url=data["github_url"],
             demo_url=data["demo_url"],
+            video_url=data["video_url"],
+            video_path=video_path,
             doc_path=doc_path
         )
         st.success("已添加！")
@@ -115,6 +143,9 @@ def render_list():
                 if p.get("summary"): st.write(f"**简介:** {p['summary']}")
                 if p.get("tech_stack"): st.write(f"**技术栈:** {' | '.join(p['tech_stack'])}")
                 if p.get("github_url"): st.write(f"**GitHub:** {p['github_url']}")
+                # 显示视频信息
+                if p.get("video_url") or p.get("video_path"):
+                    st.write("🎬 **有操作视频**")
                 st.caption(f"更新于: {p.get('updated_at', 'N/A')}")
             with c2:
                 if st.button("✏️ 编辑", key=f"ed_{p['id']}", use_container_width=True):

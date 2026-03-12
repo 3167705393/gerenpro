@@ -6,6 +6,27 @@ from data_manager import (
     get_all_projects, read_file_content, get_file_icon, is_deployed
 )
 
+
+def get_video_url(project: dict) -> str:
+    """获取视频URL（优先外部链接，其次本地路径）"""
+    if project.get("video_url"):
+        return project["video_url"]
+    if project.get("video_path"):
+        # 本地视频
+        if project["video_path"].startswith("http"):
+            return project["video_path"]
+        # 本地文件路径
+        from data_manager import BASE_DIR
+        local_path = BASE_DIR / project["video_path"]
+        if local_path.exists():
+            return str(local_path)
+    return ""
+
+
+def has_video(project: dict) -> bool:
+    """检查项目是否有视频"""
+    return bool(project.get("video_url") or project.get("video_path"))
+
 st.set_page_config(
     page_title="项目作品集",
     page_icon="🎯",
@@ -88,10 +109,13 @@ def render_project_card(project: dict):
     tech_tags = "".join([f'<span class="tech-tag">{t}</span>' for t in project.get("tech_stack", [])])
     summary = project.get("summary") or project.get("description", "")[:80] or "暂无描述"
 
+    # 视频标记
+    video_badge = '<span style="background:#ff6b6b;color:white;padding:2px 8px;border-radius:10px;font-size:0.7rem;margin-left:8px;">🎬 有视频</span>' if has_video(project) else ''
+
     st.markdown(f'''
     <div class="project-card">
         <div class="card-header">
-            <h3 class="card-title">{project['name']}</h3>
+            <h3 class="card-title">{project['name']}{video_badge}</h3>
             <p class="card-summary">{summary}</p>
         </div>
         <div class="card-body">{tech_tags}</div>
@@ -120,6 +144,25 @@ def render_project_detail(project: dict):
     if st.button("← 返回列表", key="close_detail"):
         st.session_state.view_project = None
         st.rerun()
+
+    # 操作演示视频（优先显示）
+    video_url = get_video_url(project)
+    if video_url:
+        st.markdown("**🎬 操作演示视频**")
+        # 判断是否为本地文件
+        if video_url.startswith("http"):
+            # 外部链接 - 尝试直接播放或显示链接
+            video_ext = Path(video_url).suffix.lower()
+            if video_ext in [".mp4", ".webm", ".mov", ".avi"]:
+                st.video(video_url)
+            else:
+                # 非直链视频，显示链接按钮
+                st.info("📺 此视频需要外部播放器")
+                st.link_button("▶️ 打开视频", video_url, use_container_width=True)
+        else:
+            # 本地文件
+            st.video(video_url)
+        st.markdown("")
 
     # 截图
     if project.get("screenshot_url"):
